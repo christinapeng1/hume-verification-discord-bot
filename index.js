@@ -28,7 +28,7 @@ const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET);
 client.on("ready", async () => {
   // client.user.setActivity("the BEST server!", { type: "WATCHING" });
   console.log(`Logged in as ${client.user?.tag}!`);
-  client.guilds.fetch("828708982506913792"); // TODO: don't hardcode this
+  client.guilds.fetch("991790422433210459"); // TODO: don't hardcode this
 
   await doc.useServiceAccountAuth({
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -87,6 +87,7 @@ async function updateVerifiedStudents() {
 
   const sheet = doc.sheetsByIndex[0];
   const rows = await sheet.getRows();
+  console.log(`Loaded ${rows.length} rows from the sheet.`);
   const servers = require("./verification.json");
 
   // Get the DiscordIds from the DiscordTags (if necessary)
@@ -94,13 +95,20 @@ async function updateVerifiedStudents() {
     (row) => row.DiscordTagCache !== row.DiscordTag
   );
   for (const row of updatedRows) {
-    // console.log(`[~] ${row.DiscordTag} attempting to update...`);
+    console.log(`[~] ${row.DiscordTag} attempting to update...`);
+    
     let user = client.users.cache.find((u) =>
       u.discriminator?.length === 4
         ? `${u.username}#${u.discriminator}` === row.DiscordTag
         : u.username === row.DiscordTag.toLowerCase()
     );
-    if (!user) continue;
+    if (!user) {
+      console.log(
+        `User with DiscordTag ${row.DiscordTag} not found in the server.`
+      );
+      continue;
+    }
+    console.log(`Found user: ${user.username}#${user.discriminator}`);
 
     row.DiscordId = user.id;
     row.DiscordTagCache = row.DiscordTag;
