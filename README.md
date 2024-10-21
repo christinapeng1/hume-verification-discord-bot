@@ -17,3 +17,7 @@ From the Google Form you just created, rename the username column to `DiscordTag
 ## verification.json
 
 Modify this file to add new servers. The bot will add `verifiedroleid` to any user that is verified in `guildid`.
+
+## Steps to Run Locally
+1) Run `npm i`
+2) Run `npm start`

@@ -23,7 +23,6 @@ const fs = require("fs");
 
 // Load configuration from an external config file (config.json)
 const config = JSON.parse(fs.readFileSync("config.json", "utf-8"));
-const constants = require("./constants");
 
 // Import Google Sheets API and initialize a new GoogleSpreadsheet object
 const { GoogleSpreadsheet } = require("google-spreadsheet");
