@@ -1,8 +1,6 @@
-# Brown Live Discord Bot (Blueno)
+# Hume Verification Discord Bot
 
-This bot verifies Discord users as students of Brown University. The verification form is available at https://bit.ly/brownulive (only available to logged-in @brown.edu Google accounts).
-
-With some light work, this bot can be used on any server (or group of servers). It will allow you to force new users to send you information via Google Forms, then get automatically verified on the server.
+This bot verifies Discord users by associating them with their Hume account email. The verification form is available at https://forms.gle/QfNGSgaB5bSFM43x9.
 
 ## .env file
 
@@ -18,12 +16,4 @@ From the Google Form you just created, rename the username column to `DiscordTag
 
 ## verification.json
 
-You will need to modify this file yourself to (1) add new servers, or (2) repurpose the bot for another non-Brown group. The fields are self-explanatory: the bot will add `verifiedroleid` to any user that is verified in `guildid`.
-
-## Contributions
-
-Contributions are welcome.
-
-## Brown Live Bot down?
-
-If the bot is down, you can contact Isaac (@HyperKids on Github). Alternatively, contact Brown Esports at Brown University - they own the service account for the Google Sheet that keeps this bot up.
+Modify this file to add new servers. The bot will add `verifiedroleid` to any user that is verified in `guildid`.

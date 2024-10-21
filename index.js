@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+// Check if required environment variables are defined, else log an error and exit the process
 if (
   !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
   !process.env.GOOGLE_PRIVATE_KEY ||
@@ -10,6 +11,7 @@ if (
   process.exit(1);
 }
 
+// Import Discord.js and initialize a new Discord client with specific intents (permissions)
 const Discord = require("discord.js");
 const client = new Discord.Client({
   intents: [
@@ -19,64 +21,31 @@ const client = new Discord.Client({
 });
 const fs = require("fs");
 
+// Load configuration from an external config file (config.json)
 const config = JSON.parse(fs.readFileSync("config.json", "utf-8"));
 const constants = require("./constants");
 
+// Import Google Sheets API and initialize a new GoogleSpreadsheet object
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET);
 
+// Event listener when the bot is ready and logged in
 client.on("ready", async () => {
-  // client.user.setActivity("the BEST server!", { type: "WATCHING" });
   console.log(`Logged in as ${client.user?.tag}!`);
-  client.guilds.fetch("991790422433210459"); // TODO: don't hardcode this
+  client.guilds.fetch("991790422433210459"); // Put Hume's Server ID here
 
+  // Authenticate with Google Sheets API using service account credentials from env variables
   await doc.useServiceAccountAuth({
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     private_key: process.env.GOOGLE_PRIVATE_KEY,
   });
   await doc.loadInfo();
 
-  setInterval(updateVerifiedStudents, 1000 * 15);
+  // Call updateVerifiedUsers function every 15 seconds to update user data
+  setInterval(updateVerifiedUsers, 1000 * 15);
 });
 
-client.on("message", (msg) => {
-  if (!msg.author.bot && msg.type === "DEFAULT") {
-    if (msg.content.substring(0, config.prefix.length) === config.prefix) {
-      const message = msg.content;
-      let args = message.substring(1).split(" ");
-      const cmd = args[0];
-      args = args.splice(1);
-
-      const isHyper = msg.author.id == "196685652249673728";
-
-      switch (cmd) {
-        case "update":
-          if (isHyper) {
-            constants[args[0]]?.forEach((obj) => {
-              msg.channel.send({ content: obj.text, embeds: [obj.embed] });
-            });
-          }
-          break;
-      }
-    }
-  }
-});
-
-client.on("guildMemberAdd", (member) => {
-  if (member.guild.id === "828708982506913792") {
-    client.channels.cache.get("828765547663196191")?.send({
-      content: `<@${member.id}>`,
-      embeds: [constants.autowelcome.embed],
-    });
-    member.send({ content: constants.autowelcome.dm });
-  }
-});
-
-// client.on("messageReactionAdd", (reaction, user) => {
-//   reaction.message.react(reaction.emoji)
-// })
-
-async function updateVerifiedStudents() {
+async function updateVerifiedUsers() {
   /* Three columns in the Google Sheet:
    * 1. DiscordTag (automatically filled in by Google Form)
    * 2. DiscordTagCache (copy of DiscordTag made by this function)
@@ -94,9 +63,10 @@ async function updateVerifiedStudents() {
   const updatedRows = rows.filter(
     (row) => row.DiscordTagCache !== row.DiscordTag
   );
+  // Find the user based on DiscordTag
   for (const row of updatedRows) {
     console.log(`[~] ${row.DiscordTag} attempting to update...`);
-    
+
     let user = client.users.cache.find((u) =>
       u.discriminator?.length === 4
         ? `${u.username}#${u.discriminator}` === row.DiscordTag
@@ -106,59 +76,16 @@ async function updateVerifiedStudents() {
       console.log(
         `User with DiscordTag ${row.DiscordTag} not found in the server.`
       );
-      continue;
+      continue; // Skip if the user is not found
     }
     console.log(`Found user: ${user.username}#${user.discriminator}`);
 
-    row.DiscordId = user.id;
-    row.DiscordTagCache = row.DiscordTag;
-    promises.push(row.save());
+    row.DiscordId = user.id; // Update the row with the user's Discord ID
+    row.DiscordTagCache = row.DiscordTag; // Update the cache to match current tag
+    promises.push(row.save()); // Save the updated row back to the sheet
   }
 
-  /* servers.forEach(({ guildid: guildId, verifiedroleid: verifiedRoleId }) => {
-    client.guilds.fetch(guildId).then((guild) => {
-      guild.members.fetch().then((members) => {
-        const verifiedRoleMembers = guild.roles.cache
-          .get(verifiedRoleId)
-          ?.members.map((m) => m.user.tag.toLowerCase());
-        const gSheetTags = discordUsernames.map((v) => v.toLowerCase());
-        const posDiff = gSheetTags
-          .filter((x) => !verifiedRoleMembers?.includes(x.toLowerCase()))
-          .map((v) => v.toLowerCase()); // filters to differences between the two arrays - verifiedRoleMembers is
-        // current members on the server with the "Verified" role, res.data.values[0]
-        // is Google Form list of DiscordTags that should have the role
-        // const posdiff = diff // diff.filter((x) => gsheettags.includes(x));
-        const negDiff = verifiedRoleMembers
-          .filter((x) => !gSheetTags.includes(x.toLowerCase()))
-          .map((v) => v.toLowerCase()); // diff.filter((x) => verifiedrolemembers.includes(x));
-        const diff = posDiff.concat(negDiff);
-        diff.forEach((DiscordTag) => {
-          const user = client.users.cache.find(
-            (u) => u.tag.toLowerCase() === DiscordTag.toLowerCase()
-          )?.id;
-          if (user) {
-            const guildUser = guild.members
-              .fetch(user)
-              .then((guildUser) => {
-                const username = guildUser.user.username.toLowerCase();
-                const discrim = guildUser.user.discriminator;
-                if (posDiff.includes(username + "#" + discrim)) {
-                  guildUser.roles.add(verifiedRoleId).catch(console.error);
-                  console.log("+" + username);
-                } else if (negDiff.includes(username + "#" + discrim)) {
-                  guildUser.roles.remove(verifiedRoleId).catch(console.error);
-                  console.log("-" + username);
-                }
-              })
-              .catch(console.error);
-          } else {
-            // console.log(`${DiscordTag} is invalid!`);
-          }
-        });
-      });
-    });
-  }); */
-
+  // Iterate over each server in verification.json
   promises.push(
     servers.map(async (server) => {
       const guild = await client.guilds.fetch(server.guildid);
@@ -171,24 +98,18 @@ async function updateVerifiedStudents() {
         return;
       }
 
+      // List of users with the verified role
       const verifiedRoleMembers = verifiedRole.members.map((m) => m.user.id);
+      // List of verified users from the sheet
       const sheetVerifiedMembers = rows.map((row) => row.DiscordId);
+      // Users to add the verified role to (those in the sheet but not in the role)
       const posDiff = sheetVerifiedMembers.filter(
         (x) => !verifiedRoleMembers.includes(x)
       );
-      const negDiff = verifiedRoleMembers.filter(
-        (x) => !sheetVerifiedMembers.includes(x)
-      );
+      // Add the verified role to necessary users
       for (const userId of posDiff) {
         await guild.members.cache.get(userId)?.roles.add(verifiedRole);
       }
-      for (const userId of negDiff) {
-        await guild.members.cache.get(userId)?.roles.remove(verifiedRole);
-      }
-
-      // console.log(
-      //   `Updated ${guild.name} with ${posDiff.length} new members and ${negDiff.length} removed members.`
-      // );
     })
   );
 

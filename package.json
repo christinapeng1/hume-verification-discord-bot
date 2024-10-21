@@ -1,10 +1,10 @@
 {
-  "name": "brown-live-discord-bot",
+  "name": "hume-verification-discord-bot",
   "version": "1.0.0",
-  "description": "Discord Bot for Brown Live",
+  "description": "Hume Verification Discord Bot",
   "main": "index.js",
   "repository": "https://github.com/HyperKids/brown-live-discord-bot",
-  "author": "Isaac Kim",
+  "author": "Christina Peng",
   "license": "none",
   "private": true,
   "dependencies": {
